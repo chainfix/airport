@@ -9,7 +9,7 @@ airport 是面向 AirSIM 安卓端的自建 NAS TLS 网关，提供中文设置�
 - 证书导入、NAS 证书挂载热更新，以及 Cloudflare / 阿里云 DNS / DNSPod 自动申请续期。
 - 域名、证书、控制接口、音频端口诊断；明确区分端口连通、设备身份和真实音频。
 - 手机填写信息、路由器映射表、运行状态、最近事件、无密钥配置导出。
-- 首次初始化码、管理密码、会话登录；管理面板仅接受内网访问。
+- 首次访问直接设置管理密码，以后使用密码登录；管理面板仅接受内网访问。
 - Docker Compose 部署，支持 x86_64 和 ARM64 NAS。
 
 ![airport 中文面板](docs/panel.png)
@@ -35,11 +35,11 @@ airport 是面向 AirSIM 安卓端的自建 NAS TLS 网关，提供中文设置�
 适用于已安装 Docker Compose 的 Linux NAS。脚本会询问 NAS 内网 IP 和网络方式，不修改路由器、防火墙及已有服务；已有安装目录会拒绝覆盖。
 
 ```sh
-curl -fL https://raw.githubusercontent.com/chainfix/airport/v0.1.0/scripts/install.sh -o install-airport.sh
+curl -fL https://raw.githubusercontent.com/chainfix/airport/v0.1.1/scripts/install.sh -o install-airport.sh
 sh install-airport.sh
 ```
 
-无人值守安装可设置 `AIRPORT_NAS_IP=192.168.1.20`、`AIRPORT_NETWORK_MODE=bridge` 或 `host`，以及可选的 `AIRPORT_INSTALL_DIR`。镜像下载失败时会尝试本地构建。安装完成后打开 `http://NAS局域网IP:8787`，从容器日志复制首次初始化码，再设置至少 12 字符的管理密码。
+无人值守安装可设置 `AIRPORT_NAS_IP=192.168.1.20`、`AIRPORT_NETWORK_MODE=bridge` 或 `host`，以及可选的 `AIRPORT_INSTALL_DIR`。镜像下载失败时会尝试本地构建。安装完成后打开 `http://NAS局域网IP:8787`，页面会直接提示设置至少 12 字符的管理密码，无需初始化码或查看日志。
 
 ### 方式二：NAS 图形化部署
 
@@ -48,7 +48,7 @@ sh install-airport.sh
 1. 下载本仓库源码到 NAS 的一个新目录。
 2. 将 `.env.example` 复制为 `.env`，把 `AIRPORT_PANEL_BIND` 改为 **NAS 的局域网 IPv4 地址**。
 3. 导入 `compose.yaml` 并启动。不要直接保留示例 IP，也不要将管理端口绑定到公网地址。
-4. 打开 `http://NAS局域网IP:8787`。在容器日志中找到首次初始化码，创建管理员。
+4. 打开 `http://NAS局域网IP:8787`，直接设置管理密码并进入面板。
 
 普通 `compose.yaml` 使用桥接网络，适合公网 IPv4 端口映射。**IPv6 建议 Linux NAS 使用 `compose.host.yaml`**，让 TLS 网关监听 `::` 双栈地址；面板仍绑定指定内网 IPv4。不要假设 Docker 默认桥接网络已经支持入站 IPv6。
 
@@ -146,11 +146,11 @@ docker compose logs airport
 
 ## 更新、备份与管理
 
-- 更新：在原部署目录运行 `docker compose pull && docker compose up -d`。host 模式两次命令都加 `-f compose.host.yaml`。使用固定版本时，将 image 标签设为 `0.1.0`。
+- 更新：在原部署目录运行 `docker compose pull && docker compose up -d`。host 模式两次命令都加 `-f compose.host.yaml`。使用固定版本时，将 image 标签设为 `0.1.1`。
 - 备份：保存 Compose、`.env` 和 `airport-data` 数据卷。整卷包含私钥、DNS 凭据和管理密码哈希，不能公开上传。
 - 导出：面板“导出连接配置”只含地址端口，不含私钥、DNS 凭据、密码或配对密钥。
 - 重启：会重新加载最后应用的配置；证书或端口异常时网关保持停止，面板显示事件。
-- 忘记密码：停止容器，在数据卷里删除 `auth.json`（不要删除其他文件）后重启，从日志获取新的初始化码。这会要求重新初始化管理密码。
+- 忘记密码：停止容器，在数据卷里删除 `auth.json`（不要删除其他文件）后重启，再访问面板直接设置新的管理密码。升级不会清除已有管理密码。
 - 停止网关会关闭当前连接。修改配置或更新证书后应用，已有连接继续使用建立时的后端，新连接使用新配置。
 
 管理面板默认使用内网 HTTP，不要在不可信 Wi-Fi 上输入管理密码或上传私钥。需要管理 HTTPS 时，可在 NAS 配置**仅内网可达**的反向代理、保留 Host，设置 `AIRPORT_PANEL_HOSTS` 为该面板域名，设置 `AIRPORT_SECURE_COOKIE=1`，并确保代理不向公网开放。原始音频入口仍不能走网页反向代理。

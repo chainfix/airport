@@ -11,7 +11,6 @@
   <div class="auth-intro"><a class="brand" href="/">↗ <span>airport</span></a><span class="eyebrow">YOUR PHONE. ANYWHERE.</span><h1>让家里的电话，<br>随你一起出发。</h1><p>为 AirSIM 连接一条自己的加密通道。<br>配好一次，在外也能连接家中的安卓手机。</p><div class="intro-route"><span>iPhone</span><i>→ TLS →</i><span>NAS</span><i>→</i><span>安卓</span></div><small>自建网关 · 两路 TLS · 配对身份不变</small></div>
   <div class="auth-card"><span class="eyebrow">WELCOME ABOARD</span><h2 id="auth-title">正在连接面板…</h2><p id="auth-description" class="muted"></p>
     <form id="auth-form" novalidate>
-      <label id="setup-code-label">首次初始化码<input name="code" autocomplete="off" placeholder="从 NAS 容器日志复制"><small>首次启动日志或数据目录中的 setup-code；初始化后失效。</small><span class="field-error" data-error="code"></span></label>
       <label>管理密码<input name="password" type="password" autocomplete="current-password" placeholder="至少 12 个字符" required maxlength="128"><span class="field-error" data-error="password"></span></label>
       <p id="auth-error" class="error-message" role="alert"></p><button class="primary wide" type="submit" id="auth-submit">进入面板 →</button>
     </form><p class="auth-foot">管理面板仅在内网使用。它不需要你的 AirSIM 配对码。</p>

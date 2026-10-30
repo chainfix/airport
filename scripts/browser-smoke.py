@@ -31,8 +31,8 @@ async def main():
                 errors = []
                 page.on("pageerror", lambda error: errors.append(str(error)))
                 await page.goto(f"http://127.0.0.1:{port}")
-                await expect(page.locator('#auth-title')).to_have_text('欢迎，设置你的网关')
-                await page.locator('#auth-form input[name=code]').fill(app['service'].setup_code)
+                await expect(page.locator('#auth-title')).to_have_text('设置管理密码')
+                await expect(page.locator('#auth-form input[name=code]')).to_have_count(0)
                 await page.locator('#auth-form input[name=password]').fill('browser-test-password-123')
                 await page.locator('#auth-submit').click()
                 await expect(page.locator('#shell')).to_be_visible()

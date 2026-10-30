@@ -14,7 +14,7 @@ from aiohttp import web
 from . import __version__
 from .acme import ACME, PROVIDERS
 from .certificates import Certificates
-from .config import Problem, Store, atomic_write, private_address, validate_config
+from .config import Problem, Store, private_address, validate_config
 from .diagnostics import diagnose
 from .gateway import Gateway
 
@@ -34,10 +34,8 @@ class Service:
         self.diagnostic_lock = asyncio.Lock()
         self.maintenance_task = None
         self.mounted_digest = None
-        code_file = self.store.root / "setup-code"
-        if not self.store.get("auth") and not code_file.exists():
-            atomic_write(code_file, secrets.token_urlsafe(24).encode())
-        self.setup_code = code_file.read_text().strip() if code_file.exists() else None
+        # Remove the obsolete bootstrap credential when upgrading from v0.1.0.
+        (self.store.root / "setup-code").unlink(missing_ok=True)
 
     async def install_certificate(self, cert, key, domain, source):
         async with self.mutation:
@@ -203,13 +201,8 @@ async def setup(request):
     async with s.mutation:
         if s.store.get("auth"):
             raise Problem("已完成初始化，请直接登录。", status=409)
-        code = data.get("code", "")
-        if not isinstance(code, str) or not hmac.compare_digest(code.encode(), (s.setup_code or "").encode()):
-            raise Problem("初始化码不正确，请从 NAS 容器日志或数据目录获取。", {"code": "初始化码不匹配。"}, 403)
         record = await asyncio.to_thread(password_record, data.get("password"))
         s.store.put("auth", record)
-        s.setup_code = None
-        (s.store.root / "setup-code").unlink(missing_ok=True)
     return s.session_response(request)
 
 

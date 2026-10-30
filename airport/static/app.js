@@ -110,11 +110,10 @@ async function showAuth() {
   $('#shell').hidden = true; $('#auth-screen').hidden = false;
   const auth = await api('auth/status'); setupRequired = auth.setup_required;
   if (auth.authenticated) return enter();
-  text('#auth-title', setupRequired ? '欢迎，设置你的网关' : '欢迎回来');
-  text('#auth-description', setupRequired ? '输入首次初始化码，再创建一个管理密码。下一步开始配置连接。' : '输入管理密码，查看连接与证书状态。');
-  $('#setup-code-label').hidden = !setupRequired;
+  text('#auth-title', setupRequired ? '设置管理密码' : '欢迎回来');
+  text('#auth-description', setupRequired ? '首次使用，请设置至少 12 个字符的管理密码。设置后即可进入面板。' : '输入管理密码，查看连接与证书状态。');
   $('#auth-form').elements.password.autocomplete = setupRequired ? 'new-password' : 'current-password';
-  text('#auth-submit', setupRequired ? '创建管理员 →' : '进入面板 →');
+  text('#auth-submit', setupRequired ? '设置密码并进入 →' : '进入面板 →');
 }
 async function enter() {
   $('#auth-screen').hidden = true; $('#shell').hidden = false;

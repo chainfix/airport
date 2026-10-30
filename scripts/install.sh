@@ -29,8 +29,8 @@ case "$mode" in ''|1|bridge) compose_file=compose.yaml ;; 2|host) compose_file=c
 
 task_tmp=$(mktemp -d)
 trap 'rm -rf "$task_tmp"' EXIT HUP INT TERM
-printf '\n正在下载 airport v0.1.0…\n'
-curl -fL --retry 3 'https://github.com/chainfix/airport/archive/refs/tags/v0.1.0.tar.gz' -o "$task_tmp/source.tar.gz"
+printf '\n正在下载 airport v0.1.1…\n'
+curl -fL --retry 3 'https://github.com/chainfix/airport/archive/refs/tags/v0.1.1.tar.gz' -o "$task_tmp/source.tar.gz"
 mkdir -p "$install_dir"
 tar -xzf "$task_tmp/source.tar.gz" --strip-components=1 -C "$install_dir"
 cd "$install_dir"
@@ -44,7 +44,5 @@ else
     docker compose -f "$compose_file" up -d --build
 fi
 printf '\n面板地址：http://%s:8787\n' "$nas_ip"
-printf '等待容器启动后，在以下日志中找到“首次初始化码”，用于创建管理密码。\n'
-printf '请不要把管理面板端口映射到公网。\n\n'
-docker compose -f "$compose_file" logs --tail=20 airport
-printf '\n如果日志尚未出现初始化码，稍后在 NAS 的容器日志中查看。\n'
+printf '首次访问会直接提示设置管理密码，无需初始化码。\n'
+printf '请不要把管理面板端口映射到公网。\n'

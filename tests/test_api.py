@@ -1,10 +1,12 @@
+import asyncio
 import json
 
 import pytest
 from aiohttp import CookieJar
 from aiohttp.test_utils import TestClient, TestServer
 
-from airport.web import create_app
+from airport.config import Store
+from airport.web import create_app, password_record
 
 
 @pytest.fixture
@@ -20,8 +22,7 @@ async def post(client, path, data=None, origin=True):
 
 
 async def setup(client):
-    code = client.app["service"].setup_code
-    response = await post(client, "/api/auth/setup", {"code": code, "password": "correct horse battery"})
+    response = await post(client, "/api/auth/setup", {"password": "correct horse battery"})
     assert response.status == 200, await response.text()
 
 
@@ -29,8 +30,9 @@ async def test_auth_bootstrap_csrf_and_session(client):
     assert (await client.get('/api/state')).status == 401
     response = await client.get('/api/auth/status')
     assert (await response.json())["setup_required"]
-    assert (await post(client, '/api/auth/setup', {"code": "bad", "password": "correct horse battery"})).status == 403
-    assert (await post(client, '/api/auth/setup', {"code": "错误", "password": "correct horse battery"})).status == 403
+    assert not (client.app["service"].store.root / "setup-code").exists()
+    assert (await post(client, "/api/auth/setup", {"password": "short"})).status == 400
+    assert (await post(client, "/api/auth/setup", {"password": "correct horse battery"}, origin=False)).status == 403
     assert (await post(client, '/api/auth/login', {}, origin=False)).status == 403
     await setup(client)
     assert not (client.app["service"].store.root / 'setup-code').exists()
@@ -114,3 +116,34 @@ async def test_static_security_headers(client):
     assert response.headers['X-Frame-Options'] == 'DENY'
     assert "frame-ancestors 'none'" in response.headers['Content-Security-Policy']
     assert (await client.get('/config.json')).status == 404
+
+
+async def test_only_first_concurrent_setup_can_set_password(client):
+    passwords = ['first candidate password', 'second candidate password']
+    responses = await asyncio.gather(*(
+        post(client, '/api/auth/setup', {'password': password}) for password in passwords
+    ))
+    assert sorted(response.status for response in responses) == [200, 409]
+    for password, response in zip(passwords, responses):
+        login = await post(client, '/api/auth/login', {'password': password})
+        assert login.status == (200 if response.status == 200 else 401)
+
+
+def test_upgrade_removes_obsolete_code_and_preserves_password(tmp_path):
+    store = Store(tmp_path / 'data')
+    record = password_record('existing administrator password')
+    store.put('auth', record)
+    legacy_code = store.root / 'setup-code'
+    legacy_code.write_text('obsolete-test-code')
+    app = create_app(store.root)
+    assert not legacy_code.exists()
+    assert app['service'].store.get('auth') == record
+
+
+def test_upgrade_uninitialized_install_shows_password_setup(tmp_path):
+    store = Store(tmp_path / 'data')
+    legacy_code = store.root / 'setup-code'
+    legacy_code.write_text('obsolete-test-code')
+    app = create_app(store.root)
+    assert not legacy_code.exists()
+    assert app['service'].store.get('auth') is None
