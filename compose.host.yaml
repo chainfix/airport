@@ -1,0 +1,33 @@
+services:
+  airport:
+    image: ghcr.io/chainfix/airport:latest
+    build: .
+    restart: unless-stopped
+    # Linux NAS only. Supports IPv6 without Docker bridge/NAT differences.
+    network_mode: host
+    volumes:
+      - airport-data:/data
+      # - /your/nas/certificate-directory:/certs:ro
+    environment:
+      TZ: Asia/Shanghai
+      AIRPORT_PANEL_BIND: ${AIRPORT_PANEL_BIND:-127.0.0.1}
+      AIRPORT_TLS_HOST: "::"
+      AIRPORT_PANEL_HOSTS: ${AIRPORT_PANEL_HOSTS:-}
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m,mode=1777
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+    healthcheck:
+      test: [CMD, python, -c, "import os,urllib.request; urllib.request.urlopen('http://' + os.getenv('AIRPORT_PANEL_BIND','127.0.0.1') + ':8787/healthz', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      start_period: 15s
+
+volumes:
+  airport-data:

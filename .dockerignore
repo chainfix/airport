@@ -1,0 +1,14 @@
+.git
+.venv
+__pycache__
+**/__pycache__
+.pytest_cache
+.env
+data
+.test-data
+tests
+docs
+*.pem
+*.key
+*.crt
+*.log
